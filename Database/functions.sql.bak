@@ -1,0 +1,30 @@
+CREATE OR REPLACE FUNCTION get_users(ip_page_number IN int, ip_users_count IN int, ip_search IN varchar, op_all_rows OUT bigint, ctCursor OUT refcursor) AS $$
+BEGIN
+	
+	IF ip_search IS NOT NULL THEN
+		OPEN ctCursor FOR
+		SELECT u.*
+		FROM users u
+		WHERE LOWER (u.user_id) LIKE '%' || LOWER(ip_search) || '%'
+		OR LOWER(u.email) LIKE '%' || LOWER(ip_search) || '%'
+		OR LOWER(u.first_name) LIKE '%' || LOWER(ip_search) || '%'
+		OR LOWER(u.last_name) LIKE '%' || LOWER(ip_search) || '%'
+		OR (LOWER(u.first_name) || ' ' || LOWER(u.last_name)) LIKE '%' || LOWER(ip_search) || '%'
+		OR (LOWER(u.first_name) || '' || LOWER(u.last_name)) LIKE '%' || LOWER(ip_search) || '%'
+		ORDER BY u.created_on desc
+		LIMIT ip_users_count
+		OFFSET (ip_page_number - 1) * ip_users_count;
+	ELSE
+		OPEN ctCursor FOR
+		SELECT u.*
+		FROM users u
+		ORDER BY u.created_on desc
+		LIMIT ip_users_count
+		OFFSET (ip_page_number - 1) * ip_users_count;	
+	END IF;
+	
+	SELECT COUNT(u.user_id)
+	INTO op_all_rows
+	FROM users u;
+END;
+$$ LANGUAGE plpgsql;
